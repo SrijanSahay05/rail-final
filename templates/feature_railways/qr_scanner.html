@@ -1,0 +1,683 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/forms.css' %}">
+
+<div class="scanner-container">
+    <div class="scanner-header">
+        <h1>QR Code Scanner</h1>
+        <p>Scan passenger tickets to verify bookings</p>
+    </div>
+
+    <div class="scanner-content">
+        <div class="camera-section">
+            <div class="camera-container">
+                <video id="camera" autoplay muted playsinline></video>
+                <div class="scan-overlay">
+                    <div class="scan-box">
+                        <div class="corner top-left"></div>
+                        <div class="corner top-right"></div>
+                        <div class="corner bottom-left"></div>
+                        <div class="corner bottom-right"></div>
+                    </div>
+                </div>
+                <canvas id="canvas" style="display: none;"></canvas>
+            </div>
+            
+            <div class="camera-controls">
+                <button id="startCamera" class="btn btn-primary">📷 Start Camera</button>
+                <button id="stopCamera" class="btn btn-outline" style="display: none;">⏹️ Stop Camera</button>
+                <button id="switchCamera" class="btn btn-outline" style="display: none;">🔄 Switch Camera</button>
+            </div>
+            
+            <div class="manual-input">
+                <h4>Manual QR Input</h4>
+                <textarea id="manualQR" placeholder="Paste QR code data here..." rows="4"></textarea>
+                <button id="verifyManual" class="btn btn-secondary">Verify Manual Input</button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div id="scanStatus" class="scan-status">
+                <div class="status-icon">📱</div>
+                <div class="status-text">Ready to scan</div>
+            </div>
+
+            <div id="verificationResult" class="verification-result" style="display: none;">
+                <!-- Results will be populated here -->
+            </div>
+
+            <div class="scan-history">
+                <h4>Recent Scans</h4>
+                <div id="scanHistoryList" class="history-list">
+                    <div class="empty-history">No scans yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.scanner-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.scanner-header {
+    text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+.scanner-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+}
+
+.scanner-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.scanner-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.camera-section, .results-section {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.camera-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 20px;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#camera {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scan-box {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.corner {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 3px solid #4caf50;
+}
+
+.corner.top-left {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.corner.top-right {
+    top: -2px;
+    right: -2px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.corner.bottom-left {
+    bottom: -2px;
+    left: -2px;
+    border-right: none;
+    border-top: none;
+}
+
+.corner.bottom-right {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+}
+
+.camera-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.manual-input {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 20px;
+}
+
+.manual-input h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.manual-input textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+    margin-bottom: 10px;
+}
+
+.scan-status {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #e0e0e0;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.status-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.status-text {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.scan-status.scanning {
+    border-color: #4caf50;
+    background: #f8fff8;
+}
+
+.scan-status.scanning .status-icon {
+    animation: pulse 1.5s infinite;
+}
+
+.scan-status.error {
+    border-color: #f44336;
+    background: #fff8f8;
+    color: #f44336;
+}
+
+.scan-status.success {
+    border-color: #4caf50;
+    background: #f8fff8;
+    color: #4caf50;
+}
+
+.scan-status.warning {
+    border-color: #ff9800;
+    background: #fff8f0;
+    color: #ff9800;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.verification-result {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.verification-result.success {
+    border-color: #4caf50;
+    background: #f8fff8;
+}
+
+.verification-result.warning {
+    border-color: #ff9800;
+    background: #fff8f0;
+}
+
+.verification-result.error {
+    border-color: #f44336;
+    background: #fff8f8;
+}
+
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.result-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 2px;
+}
+
+.detail-value {
+    font-weight: 500;
+    color: #333;
+}
+
+.passengers-info {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.passenger-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.scan-history h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.history-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.history-item.success {
+    border-color: #4caf50;
+    background: #f8fff8;
+}
+
+.history-item.error {
+    border-color: #f44336;
+    background: #fff8f8;
+}
+
+.empty-history {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .scanner-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .camera-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .result-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .passenger-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+</style>
+
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+let camera;
+let scanning = false;
+let scanHistory = [];
+let currentStream = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startCameraBtn = document.getElementById('startCamera');
+    const stopCameraBtn = document.getElementById('stopCamera');
+    const switchCameraBtn = document.getElementById('switchCamera');
+    const verifyManualBtn = document.getElementById('verifyManual');
+    const manualQRInput = document.getElementById('manualQR');
+    
+    camera = document.getElementById('camera');
+    
+    startCameraBtn.addEventListener('click', startCamera);
+    stopCameraBtn.addEventListener('click', stopCamera);
+    switchCameraBtn.addEventListener('click', switchCamera);
+    verifyManualBtn.addEventListener('click', verifyManualInput);
+    
+    // Check for camera support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        updateScanStatus('Camera not supported', 'error');
+        startCameraBtn.disabled = true;
+    }
+});
+
+async function startCamera() {
+    try {
+        updateScanStatus('Starting camera...', 'scanning');
+        
+        const constraints = {
+            video: {
+                facingMode: 'environment', // Use back camera if available
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        };
+        
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        camera.srcObject = currentStream;
+        
+        camera.onloadedmetadata = () => {
+            scanning = true;
+            scanForQR();
+            updateScanStatus('Scanning for QR codes...', 'scanning');
+            
+            document.getElementById('startCamera').style.display = 'none';
+            document.getElementById('stopCamera').style.display = 'inline-block';
+            document.getElementById('switchCamera').style.display = 'inline-block';
+        };
+        
+    } catch (error) {
+        console.error('Camera error:', error);
+        updateScanStatus('Camera access denied or unavailable', 'error');
+    }
+}
+
+function stopCamera() {
+    scanning = false;
+    
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+    
+    camera.srcObject = null;
+    updateScanStatus('Camera stopped', '');
+    
+    document.getElementById('startCamera').style.display = 'inline-block';
+    document.getElementById('stopCamera').style.display = 'none';
+    document.getElementById('switchCamera').style.display = 'none';
+}
+
+async function switchCamera() {
+    if (currentStream) {
+        stopCamera();
+        // Add a small delay before starting with different constraints
+        setTimeout(() => {
+            startCamera();
+        }, 500);
+    }
+}
+
+function scanForQR() {
+    if (!scanning) return;
+    
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (camera.readyState === camera.HAVE_ENOUGH_DATA) {
+        canvas.width = camera.videoWidth;
+        canvas.height = camera.videoHeight;
+        context.drawImage(camera, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+            scanning = false;
+            updateScanStatus('QR Code detected, verifying...', 'scanning');
+            verifyQRCode(code.data);
+            
+            // Resume scanning after 2 seconds
+            setTimeout(() => {
+                if (currentStream) {
+                    scanning = true;
+                    updateScanStatus('Scanning for QR codes...', 'scanning');
+                    scanForQR();
+                }
+            }, 2000);
+        }
+    }
+    
+    if (scanning) {
+        requestAnimationFrame(scanForQR);
+    }
+}
+
+function verifyManualInput() {
+    const qrData = document.getElementById('manualQR').value.trim();
+    if (!qrData) {
+        alert('Please enter QR code data');
+        return;
+    }
+    
+    updateScanStatus('Verifying manual input...', 'scanning');
+    verifyQRCode(qrData);
+}
+
+async function verifyQRCode(qrData) {
+    try {
+        const response = await fetch('{% url "feature_railways:verify_ticket" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ qr_data: qrData })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayVerificationResult(result, true);
+            const statusMessage = result.verification_status === 'ALREADY_VERIFIED' ? 
+                'Already Verified' : 'Newly Verified';
+            const scanMessage = result.verification_status === 'ALREADY_VERIFIED' ? 
+                'Ticket already verified!' : 'Ticket verified successfully!';
+            updateScanStatus(scanMessage, result.verification_status === 'ALREADY_VERIFIED' ? 'warning' : 'success');
+            addToHistory(result.booking_id, true, statusMessage);
+        } else {
+            displayVerificationResult(result, false);
+            updateScanStatus(result.error || 'Verification failed', 'error');
+            addToHistory('Unknown', false, result.error || 'Verification failed');
+        }
+        
+    } catch (error) {
+        console.error('Verification error:', error);
+        updateScanStatus('Network error during verification', 'error');
+        addToHistory('Unknown', false, 'Network error');
+    }
+}
+
+function displayVerificationResult(result, success) {
+    const resultDiv = document.getElementById('verificationResult');
+    
+    if (success) {
+        const isAlreadyVerified = result.verification_status === 'ALREADY_VERIFIED';
+        const statusColor = isAlreadyVerified ? '#ff9800' : '#4caf50';
+        const statusIcon = isAlreadyVerified ? '⚠️' : '✅';
+        const statusClass = isAlreadyVerified ? 'warning' : 'success';
+        
+        resultDiv.className = `verification-result ${statusClass}`;
+        resultDiv.innerHTML = `
+            <div class="result-header">
+                <span style="color: ${statusColor};">${statusIcon}</span>
+                <span>${isAlreadyVerified ? 'Already Verified Ticket' : 'Valid Ticket'} - ${result.booking_id}</span>
+            </div>
+            <div class="status-message" style="color: ${statusColor}; margin: 10px 0; font-weight: 500;">
+                ${result.status_message}
+            </div>
+            <div class="result-details">
+                <div class="detail-item">
+                    <div class="detail-label">Route</div>
+                    <div class="detail-value">${result.route_name}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Departure</div>
+                    <div class="detail-value">${result.departure_time}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Class</div>
+                    <div class="detail-value">${result.seat_class}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Passengers</div>
+                    <div class="detail-value">${result.passenger_count}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Fare</div>
+                    <div class="detail-value">₹${result.total_fare}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Verification Status</div>
+                    <div class="detail-value">${result.verification_status === 'NEWLY_VERIFIED' ? 'Just Verified' : 'Previously Verified'}</div>
+                </div>
+                ${result.verification_timestamp ? `
+                    <div class="detail-item">
+                        <div class="detail-label">${isAlreadyVerified ? 'Originally Verified' : 'Verified At'}</div>
+                        <div class="detail-value">${new Date(result.verification_timestamp).toLocaleString()}</div>
+                    </div>
+                ` : ''}
+            </div>
+            ${result.passenger_details && result.passenger_details.length > 0 ? `
+                <div class="passengers-info">
+                    <strong>Passengers:</strong>
+                    ${result.passenger_details.map(p => `
+                        <div class="passenger-item">
+                            <span>${p.name} (${p.age}, ${p.gender})</span>
+                            <span>Seat: ${p.seat_number}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        `;
+    } else {
+        resultDiv.className = `verification-result error`;
+        resultDiv.innerHTML = `
+            <div class="result-header">
+                <span style="color: #f44336;">❌</span>
+                <span>Invalid Ticket</span>
+            </div>
+            <div class="error-message" style="color: #f44336; margin-top: 10px;">
+                ${result.error || 'Unknown error'}
+            </div>
+        `;
+    }
+    
+    resultDiv.style.display = 'block';
+}
+
+function updateScanStatus(message, type = '') {
+    const statusDiv = document.getElementById('scanStatus');
+    const statusText = statusDiv.querySelector('.status-text');
+    const statusIcon = statusDiv.querySelector('.status-icon');
+    
+    statusText.textContent = message;
+    statusDiv.className = `scan-status ${type}`;
+    
+    switch (type) {
+        case 'scanning':
+            statusIcon.textContent = '🔍';
+            break;
+        case 'success':
+            statusIcon.textContent = '✅';
+            break;
+        case 'warning':
+            statusIcon.textContent = '⚠️';
+            break;
+        case 'error':
+            statusIcon.textContent = '❌';
+            break;
+        default:
+            statusIcon.textContent = '📱';
+    }
+}
+
+function addToHistory(bookingId, success, message) {
+    const timestamp = new Date().toLocaleString();
+    scanHistory.unshift({ bookingId, success, message, timestamp });
+    
+    // Keep only last 10 scans
+    if (scanHistory.length > 10) {
+        scanHistory = scanHistory.slice(0, 10);
+    }
+    
+    updateHistoryDisplay();
+}
+
+function updateHistoryDisplay() {
+    const historyList = document.getElementById('scanHistoryList');
+    
+    if (scanHistory.length === 0) {
+        historyList.innerHTML = '<div class="empty-history">No scans yet</div>';
+        return;
+    }
+    
+    historyList.innerHTML = scanHistory.map(item => `
+        <div class="history-item ${item.success ? 'success' : 'error'}">
+            <div>
+                <strong>${item.bookingId}</strong><br>
+                <small>${item.message}</small>
+            </div>
+            <div style="text-align: right; font-size: 0.8rem; color: #666;">
+                ${item.timestamp}
+            </div>
+        </div>
+    `).join('');
+}
+</script>
+
+<!-- CSRF Token for AJAX requests -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{% endblock %}

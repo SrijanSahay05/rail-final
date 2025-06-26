@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container bg-white text-black py-5">
+    <div class="text-center mb-4 p-4 bg-primary text-white rounded">
+        <h1 class="h2">My Profile</h1>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h3>{{ user.get_full_name|default:user.username }}</h3>
+                <p class="mb-1">{{ user.email }}</p>
+                <p class="mb-0">Member since {{ user.date_joined|date:"F Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="bg-white bg-opacity-10 p-3 rounded text-center">
+                            <div class="h4 fw-bold">{{ total_bookings }}</div>
+                            <small>Total Bookings</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-white bg-opacity-10 p-3 rounded text-center">
+                            <div class="h4 fw-bold">₹{{ wallet_balance|floatformat:2 }}</div>
+                            <small>Wallet Balance</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'feature_transaction:wallet_dashboard' %}" class="btn btn-light">Manage Wallet</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Booking History</h3>
+                </div>
+                <div class="card-body">
+                    {% if user_bookings %}
+                        {% for booking in user_bookings %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="mb-1">{{ booking.booking_id }}</h5>
+                                    <span class="badge {% if booking.booking_status == 'CONFIRMED' %}bg-success{% elif booking.booking_status == 'PENDING' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ booking.get_booking_status_display }}
+                                    </span>
+                                    {% if booking.is_verified %}
+                                        <span class="badge bg-success">✓ Verified</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <a href="{% url 'feature_railways:booking_detail' booking.booking_id %}" class="btn btn-outline-primary btn-sm me-1">
+                                        View Details
+                                    </a>
+                                    {% if booking.booking_status == 'CONFIRMED' %}
+                                        <a href="{% url 'feature_railways:booking_qr' booking.booking_id %}" class="btn btn-primary btn-sm">
+                                            📱 QR Code
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>{{ booking.train.route.name }}</strong>
+                                    <div class="text-muted small">Train #{{ booking.train.id }}</div>
+                                    <div class="mt-1">
+                                        <span class="fw-semibold">{{ booking.actual_source_station.name }}</span>
+                                        <span class="text-muted mx-2">→</span>
+                                        <span class="fw-semibold">{{ booking.actual_destination_station.name }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row g-2 small">
+                                        <div class="col-6">
+                                            <span class="text-muted">Date:</span><br>
+                                            <span class="fw-semibold">{{ booking.actual_departure_time|date:"M d, Y" }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted">Time:</span><br>
+                                            <span class="fw-semibold">{{ booking.actual_departure_time|time:"H:i" }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted">Class:</span><br>
+                                            <span class="fw-semibold">{{ booking.seat_class.class_type }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted">Fare:</span><br>
+                                            <span class="fw-semibold">₹{{ booking.total_fare }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 pt-2 border-top">
+                                <small class="text-muted">Booked on {{ booking.booking_date|date:"M d, Y H:i" }}</small>
+                                {% if booking.verification_timestamp %}
+                                    <small class="text-success ms-3">Verified on {{ booking.verification_timestamp|date:"M d, Y H:i" }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">You haven't made any bookings yet.</p>
+                            <a href="{% url 'feature_railways:index' %}" class="btn btn-success">Book a Train</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Quick Stats</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Confirmed Bookings</span>
+                        <span class="fw-bold text-success">{{ confirmed_bookings }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Verified Bookings</span>
+                        <span class="fw-bold text-info">{{ verified_bookings }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Wallet Balance</span>
+                        <span class="fw-bold text-primary">₹{{ wallet_balance|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3>Recent Transactions</h3>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                        {% for transaction in recent_transactions %}
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <div class="fw-bold">{{ transaction.transaction_type.name }}</div>
+                                <small class="text-muted">{{ transaction.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <div class="fw-bold {% if transaction.transaction_type.is_credit %}text-success{% else %}text-danger{% endif %}">
+                                {% if transaction.transaction_type.is_credit %}+{% else %}-{% endif %}₹{{ transaction.amount }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'feature_transaction:transaction_history' %}" class="btn btn-outline-primary btn-sm">View All Transactions</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No transactions yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

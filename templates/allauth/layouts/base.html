@@ -1,0 +1,54 @@
+{% load i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% block head_title %}{% endblock head_title %}
+    </title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_head %}{% endblock extra_head %}
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="navbar">
+            <div class="navbar-left">
+                <span class="project-name">SaaS Project</span>
+            </div>
+            <div class="navbar-right">
+                <a href="/" class="menu-btn">Home</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'account_email' %}" class="menu-btn">Change Email</a>
+                    <a href="{% url 'account_change_password' %}" class="menu-btn">Change Password</a>
+                    <a href="{% url 'account_logout' %}" class="auth-btn">Logout</a>
+                {% else %}
+                    <div class="center-btn">
+                        <a href="{% url 'account_login' %}" class="auth-btn">Login</a>
+                    </div>
+                    <a href="{% url 'account_signup' %}" class="menu-btn">Sign Up</a>
+                {% endif %}
+            </div>
+        </header>
+        <main class="main-content">
+            {% block body %}
+                {% if messages %}
+                    <div class="success-message">
+                        <ul>
+                            {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {% block content %}{% endblock content %}
+            {% endblock body %}
+        </main>
+        <footer class="footer">
+            <div class="footer-content">
+                &copy; {{ year|default:2025 }} SaaS Project. All rights reserved.
+            </div>
+        </footer>
+    </div>
+    {% block extra_body %}{% endblock extra_body %}
+</body>
+</html>

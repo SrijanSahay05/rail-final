@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}OTP Verification{% endblock %}
+
+{% block extra_head %}
+<style>
+    .otp-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .otp-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .otp-header h2 {
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .transaction-details {
+        background: #f8f9ff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #667eea;
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #4a5568;
+    }
+    
+    .detail-value {
+        color: #2d3748;
+        font-weight: 500;
+    }
+    
+    .amount-value {
+        color: #667eea;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    
+    .otp-form {
+        margin-bottom: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+    }
+    
+    .otp-input {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1.2em;
+        text-align: center;
+        letter-spacing: 0.2em;
+        font-weight: bold;
+    }
+    
+    .otp-input:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .otp-help {
+        font-size: 0.9em;
+        color: #718096;
+        margin-top: 0.5rem;
+        text-align: center;
+    }
+    
+    .countdown {
+        background: #fed7d7;
+        color: #c53030;
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .attempts-warning {
+        background: #fef5e7;
+        color: #dd6b20;
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+    
+    .btn-secondary:hover {
+        background: #cbd5e0;
+    }
+    
+    .btn-danger {
+        background: #e53e3e;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #c53030;
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .btn:disabled:hover {
+        transform: none;
+    }
+    
+    .security-note {
+        background: #e6fffa;
+        border: 1px solid #81e6d9;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 2rem;
+        font-size: 0.9em;
+        color: #2d3748;
+    }
+    
+    .security-note .icon {
+        color: #319795;
+        margin-right: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .otp-container {
+            margin: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            flex: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="otp-container">
+    <div class="otp-header">
+        <h2>🔐 OTP Verification</h2>
+        <p>Enter the OTP sent to your email to complete the {{ transaction_type|lower }}</p>
+    </div>
+    
+    <div class="transaction-details">
+        <h4>Transaction Details</h4>
+        <div class="detail-row">
+            <span class="detail-label">Type:</span>
+            <span class="detail-value">{{ transaction_type }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Amount:</span>
+            <span class="detail-value amount-value">₹{{ amount }}</span>
+        </div>
+        {% if method %}
+        <div class="detail-row">
+            <span class="detail-label">Method:</span>
+            <span class="detail-value">{{ method }}</span>
+        </div>
+        {% endif %}
+        {% if booking %}
+        <div class="detail-row">
+            <span class="detail-label">Booking:</span>
+            <span class="detail-value">{{ booking.booking_id }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Train:</span>
+            <span class="detail-value">{{ booking.train.route.name }}</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if remaining_attempts is not None and remaining_attempts < 3 %}
+    <div class="attempts-warning">
+        ⚠️ {{ remaining_attempts }} attempt{{ remaining_attempts|pluralize }} remaining
+    </div>
+    {% endif %}
+    
+    <form method="post" class="otp-form" id="otpForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="otp_code">Enter 6-digit OTP:</label>
+            <input type="text" 
+                   id="otp_code" 
+                   name="otp_code" 
+                   class="otp-input" 
+                   maxlength="6" 
+                   pattern="[0-9]{6}" 
+                   placeholder="000000"
+                   required
+                   autocomplete="off">
+            <div class="otp-help">
+                Enter the 6-digit code sent to your email address
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary" id="verifyBtn">
+                🔓 Verify & Complete
+            </button>
+            <button type="button" class="btn btn-secondary" id="resendBtn" onclick="resendOTP()">
+                📧 Resend OTP
+            </button>
+            <a href="{% url 'feature_transaction:wallet_dashboard' %}" class="btn btn-outline-danger">
+                ❌ Cancel
+            </a>
+        </div>
+    </form>
+    
+    <div class="security-note">
+        <span class="icon">🛡️</span>
+        <strong>Security Notice:</strong> Never share your OTP with anyone. Our team will never ask for your OTP over phone or email.
+    </div>
+</div>
+
+<script>
+// Auto-format OTP input
+document.getElementById('otp_code').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length > 6) {
+        value = value.substring(0, 6);
+    }
+    e.target.value = value;
+    
+    // Auto-submit if 6 digits entered
+    if (value.length === 6) {
+        document.getElementById('otpForm').submit();
+    }
+});
+
+// Resend OTP function
+async function resendOTP() {
+    const resendBtn = document.getElementById('resendBtn');
+    const originalText = resendBtn.innerHTML;
+    
+    resendBtn.disabled = true;
+    resendBtn.innerHTML = '⏳ Sending...';
+    
+    try {
+        const response = await fetch('{% url "feature_transaction:resend_otp" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                'transaction_type': '{% if transaction_type == "Add Money" %}topup_wallet{% elif transaction_type == "Payment" %}payment{% endif %}'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('OTP resent successfully! Please check your email.');
+        } else {
+            alert('Failed to resend OTP: ' + data.message);
+        }
+    } catch (error) {
+        alert('Error resending OTP. Please try again.');
+        console.error('Error:', error);
+    } finally {
+        resendBtn.disabled = false;
+        resendBtn.innerHTML = originalText;
+        
+        // Disable resend button for 30 seconds
+        setTimeout(() => {
+            resendBtn.disabled = false;
+        }, 30000);
+    }
+}
+
+// Focus on OTP input when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('otp_code').focus();
+});
+
+// Handle form submission
+document.getElementById('otpForm').addEventListener('submit', function(e) {
+    const otpCode = document.getElementById('otp_code').value;
+    if (otpCode.length !== 6) {
+        e.preventDefault();
+        alert('Please enter a complete 6-digit OTP');
+        return;
+    }
+    
+    const verifyBtn = document.getElementById('verifyBtn');
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '⏳ Verifying...';
+});
+</script>
+{% endblock %}

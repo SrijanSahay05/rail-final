@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<div class="container bg-white text-black py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Success Header -->
+            <div class="text-center mb-5 p-5 bg-success text-white rounded">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle fa-5x"></i>
+                </div>
+                <h1 class="display-4 fw-bold mb-3">Booking Confirmed!</h1>
+                <p class="lead">Your train tickets have been successfully booked</p>
+            </div>
+            
+            <!-- Booking ID -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center bg-light">
+                    <h2 class="text-primary mb-2">Booking ID: {{ booking_summary.booking.booking_id }}</h2>
+                    <p class="text-muted mb-0">Please save this booking ID for future reference</p>
+                </div>
+            </div>
+            
+            <!-- Journey Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-route me-2"></i>Journey Details
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h5 class="text-primary">#{{ booking_summary.train.id }}</h5>
+                        <h6 class="text-muted">{{ booking_summary.route.name }}</h6>
+                    </div>
+                    
+                    <div class="row align-items-center">
+                        <div class="col-md-4 text-center">
+                            <h6 class="text-primary fw-bold">{{ booking_summary.booking.actual_source_station.code|upper }}</h6>
+                            <p class="mb-1">{{ booking_summary.booking.actual_source_station.name }}</p>
+                            <small class="text-muted">{{ booking_summary.booking.actual_departure_time|date:"M d, Y H:i" }}</small>
+                        </div>
+                        
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-arrow-right text-primary fa-2x"></i>
+                            <div class="mt-2">
+                                <span class="badge bg-secondary">{{ booking_summary.booking.actual_journey_duration }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 text-center">
+                            <h6 class="text-primary fw-bold">{{ booking_summary.booking.actual_destination_station.code|upper }}</h6>
+                            <p class="mb-1">{{ booking_summary.booking.actual_destination_station.name }}</p>
+                            <small class="text-muted">{{ booking_summary.booking.actual_arrival_time|date:"M d, Y H:i" }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Passenger & Seat Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Passenger & Seat Details
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for assignment in booking_summary.seat_assignments %}
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body d-flex align-items-center">
+                                    <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <strong>{{ assignment.seat_number }}</strong>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ assignment.passenger.name }}</h6>
+                                        <small class="text-muted">{{ assignment.passenger.age }} years • {{ assignment.passenger.gender }}</small>
+                                        <div class="badge bg-secondary mt-1">{{ assignment.seat.seat_class.class_type }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Booking Summary -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>Booking Summary
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between">
+                                <span>Passengers:</span>
+                                <strong>{{ booking_summary.booking.passenger_count }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between">
+                                <span>Class:</span>
+                                <strong>{{ booking_summary.booking.seat_class.class_type }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between">
+                                <span>Booking Date:</span>
+                                <strong>{{ booking_summary.booking.booking_date|date:"M d, Y H:i" }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between border-top pt-2">
+                                <span class="fw-bold">Total Fare:</span>
+                                <strong class="text-success fs-5">₹{{ booking_summary.booking.total_fare }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Important Information -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Important Information
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-ticket-alt fa-2x text-primary mb-2"></i>
+                                <h6>E-Ticket</h6>
+                                <small class="text-muted">This confirmation serves as your e-ticket. No physical ticket required.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-id-card fa-2x text-primary mb-2"></i>
+                                <h6>ID Proof</h6>
+                                <small class="text-muted">Carry a valid government-issued photo ID during travel.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-clock fa-2x text-primary mb-2"></i>
+                                <h6>Reporting Time</h6>
+                                <small class="text-muted">Arrive at the station 30 minutes before departure time.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <button onclick="window.print()" class="btn btn-outline-secondary">
+                    <i class="fas fa-print me-2"></i>Print Ticket
+                </button>
+                
+                <a href="{% url 'feature_railways:search_trains' %}" class="btn btn-primary">
+                    <i class="fas fa-train me-2"></i>Book Another Train
+                </a>
+                
+                <a href="{% url 'feature_railways:index' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home me-2"></i>Go to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .navbar, .footer {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container bg-white text-black py-5">
+    <div class="text-center mb-5">
+        <h1 class="h2">Railway Staff Dashboard</h1>
+        <p class="lead">Welcome to the Railway Staff Dashboard. Manage all aspects of the railway system efficiently.</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_stations|default:0 }}</h3>
+                    <small class="text-muted">Stations</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_routes|default:0 }}</h3>
+                    <small class="text-muted">Routes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_trains|default:0 }}</h3>
+                    <small class="text-muted">Trains</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_bookings|default:0 }}</h3>
+                    <small class="text-muted">Total Bookings</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ confirmed_bookings|default:0 }}</h3>
+                    <small class="text-muted">Confirmed</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">₹{{ total_revenue|floatformat:2 }}</h3>
+                    <small class="text-muted">Revenue</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Sections -->
+    <div class="row g-4">
+        <!-- Ticket Verification -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Ticket Verification</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'feature_railways:qr_scanner' %}" class="btn btn-primary">QR Code Scanner</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Quick Actions</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'feature_railways:generate_trains' %}" class="btn btn-success">Generate Trains</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Configuration</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'feature_railways:add_station' %}" class="btn btn-outline-primary">Add Station</a>
+                        <a href="{% url 'feature_railways:add_route' %}" class="btn btn-outline-primary">Add Route</a>
+                        <a href="{% url 'feature_railways:add_seat_class' %}" class="btn btn-outline-primary">Add Seat Class</a>
+                        <a href="{% url 'feature_railways:add_route_halt' %}" class="btn btn-outline-primary">Add Route Halt</a>
+                        <a href="{% url 'feature_railways:add_route_seat_class' %}" class="btn btn-outline-primary">Add Route Seat Class</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View & Manage -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>View & Manage</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'feature_railways:view_stations' %}" class="btn btn-outline-secondary">View Stations</a>
+                        <a href="{% url 'feature_railways:view_routes' %}" class="btn btn-outline-secondary">View Routes</a>
+                        <a href="{% url 'feature_railways:view_seat_classes' %}" class="btn btn-outline-secondary">View Seat Classes</a>
+                        <a href="{% url 'feature_railways:view_trains' %}" class="btn btn-outline-secondary">View Trains</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

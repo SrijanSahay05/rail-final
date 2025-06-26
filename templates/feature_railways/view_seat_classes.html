@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container bg-white text-black py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2"><i class="fas fa-chair me-2"></i>All Seat Classes</h1>
+        <a href="{% url 'feature_railways:add_seat_class' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Seat Class
+        </a>
+    </div>
+    
+    <div class="mb-3">
+        <input type="text" class="form-control" placeholder="Search seat classes..." id="searchInput">
+    </div>
+    
+    {% if seat_classes %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Code</th>
+                        <th>Class Type</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for seat_class in seat_classes %}
+                    <tr>
+                        <td><span class="badge bg-info">{{ seat_class.code|upper }}</span></td>
+                        <td>{{ seat_class.class_type|title }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <h3><i class="fas fa-info-circle me-2"></i>No Seat Classes Found</h3>
+            <p>No seat classes have been added yet. Click "Add New Seat Class" to get started.</p>
+        </div>
+    {% endif %}
+    
+    <div class="text-center mt-4">
+        <a href="{% url 'feature_railways:railway_staff_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchValue = this.value.toLowerCase();
+    const tableRows = document.querySelectorAll('#tableBody tr');
+    
+    tableRows.forEach(row => {
+        const code = row.cells[0].textContent.toLowerCase();
+        const classType = row.cells[1].textContent.toLowerCase();
+        
+        if (code.includes(searchValue) || classType.includes(searchValue)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

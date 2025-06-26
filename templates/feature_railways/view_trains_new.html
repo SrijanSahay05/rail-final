@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container bg-white text-black py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2"><i class="fas fa-train me-2"></i>All Trains</h1>
+        <a href="{% url 'feature_railways:generate_trains' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Generate More Trains
+        </a>
+    </div>
+    
+    <div class="mb-3">
+        <input type="text" class="form-control" placeholder="Search trains..." id="searchInput">
+    </div>
+    
+    {% if trains %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Train ID</th>
+                        <th>Route</th>
+                        <th>Route Code</th>
+                        <th>Departure</th>
+                        <th>Arrival</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for train in trains %}
+                    <tr>
+                        <td><span class="badge bg-primary">#{{ train.id }}</span></td>
+                        <td>{{ train.route.name|title }}</td>
+                        <td><span class="badge bg-secondary">{{ train.route.code|upper }}</span></td>
+                        <td>{{ train.departure_date_time|date:"M d, Y H:i" }}</td>
+                        <td>{{ train.arrival_date_time|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if train.departure_date_time > now %}
+                                <span class="badge bg-success">Scheduled</span>
+                            {% elif train.arrival_date_time > now %}
+                                <span class="badge bg-warning">In Transit</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Completed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <h3><i class="fas fa-info-circle me-2"></i>No Trains Found</h3>
+            <p>No trains have been generated yet. Click "Generate More Trains" to create trains for your routes.</p>
+        </div>
+    {% endif %}
+    
+    <div class="text-center mt-4">
+        <a href="{% url 'feature_railways:railway_staff_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchValue = this.value.toLowerCase();
+    const tableRows = document.querySelectorAll('#tableBody tr');
+    
+    tableRows.forEach(row => {
+        const trainId = row.cells[0].textContent.toLowerCase();
+        const routeName = row.cells[1].textContent.toLowerCase();
+        const routeCode = row.cells[2].textContent.toLowerCase();
+        
+        if (trainId.includes(searchValue) || routeName.includes(searchValue) || routeCode.includes(searchValue)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
