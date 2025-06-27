@@ -52,9 +52,7 @@ class OTPVerification(models.Model):
 
 
 class Wallet(models.Model):
-    """
-    Virtual wallet for users to store money for transactions
-    """
+
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='wallet')
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     created_at = models.DateTimeField(auto_now_add=True)
@@ -87,9 +85,7 @@ class Wallet(models.Model):
 
 
 class Transaction(models.Model):
-    """
-    Simplified transaction model for wallet operations
-    """
+
     TRANSACTION_STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('PROCESSING', 'Processing'),
@@ -175,16 +171,12 @@ class Transaction(models.Model):
             self.description = f"{self.description}\nFailure reason: {reason}"
         self.save()
 
-
-# Signal to automatically create wallet for new users
+#TODO shift to feature_transaction.signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 @receiver(post_save, sender=CustomUser)
 def create_user_wallet(sender, instance, created, **kwargs):
-    """
-    Signal handler to automatically create a wallet when a new user registers
-    """
     if created:
         Wallet.objects.create(
             user=instance, 

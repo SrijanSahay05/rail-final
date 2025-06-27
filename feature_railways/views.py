@@ -17,7 +17,7 @@ from .forms import (
     TrainSearchForm, BookingForm, StationForm, SeatClassForm, RouteForm,
     RouteHaltForm, RouteSeatClassForm, TrainGenerationForm, PassengerDetailForm, PassengerFormSet, BookingConfirmationForm
 )
-from .services import generate_trains_on_route, generate_train_seats_for_route, get_train_generation_summary
+from .services import generate_trains_on_route, get_train_generation_summary
 from .booking_services import BookingService
 from feature_transaction.services import WalletService
 def is_staff(user):

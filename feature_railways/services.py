@@ -236,22 +236,22 @@ def create_train_seats_for_train(train):
     return total_seats_created
 
 # TODO check this code block later if referenced in any other file
-def generate_train_seats_for_route(route_pk):
-
-    print("=== Function Called: generate_train_seats_for_route ===")
-    try:
-        trains = Train.objects.filter(route_id=route_pk)
-        print(f"[✓] Trains fetched for route {route_pk}: {[str(train) for train in trains]}")
-    except Train.DoesNotExist:
-        print("[✗] No trains found for this route.")
-        raise ValidationError("No trains found for this route.")
-    
-    seat_classes = RouteSeatClass.objects.filter(route_id=route_pk)
-    print(f"[i] Seat classes for route {route_pk}: {[str(sc) for sc in seat_classes]}")
-
-    for train in trains:
-        print(f"[i] Processing train: {train}")
-        create_train_seats_for_train(train)
+# def generate_train_seats_for_route(route_pk):
+#
+#     print("=== Function Called: generate_train_seats_for_route ===")
+#     try:
+#         trains = Train.objects.filter(route_id=route_pk)
+#         print(f"[✓] Trains fetched for route {route_pk}: {[str(train) for train in trains]}")
+#     except Train.DoesNotExist:
+#         print("[✗] No trains found for this route.")
+#         raise ValidationError("No trains found for this route.")
+#
+#     seat_classes = RouteSeatClass.objects.filter(route_id=route_pk)
+#     print(f"[i] Seat classes for route {route_pk}: {[str(sc) for sc in seat_classes]}")
+#
+#     for train in trains:
+#         print(f"[i] Processing train: {train}")
+#         create_train_seats_for_train(train)
 
 def cleanup_incomplete_trains(route):
 
