@@ -6,20 +6,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres_user -d django_prod"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   web:
     build:
       context: .
       dockerfile: dockerfile.prod
     command: >
-      sh -c "python manage.py collectstatic --noinput &&
-         python manage.py makemigrations &&
-         python manage.py migrate &&
-         gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+      sh -c "
+        echo 'Waiting for database...' &&
+        while ! nc -z db 5432; do sleep 1; done &&
+        echo 'Database ready!' &&
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2
+      "
     volumes:
-      - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     env_file:
@@ -29,21 +35,28 @@ services:
     restart: unless-stopped
     expose:
       - "8000"
-  
+
   nginx:
     image: nginx:latest
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./certbot-www:/var/www/certbot
+      - ./certbot-www:/var/www/certbot:ro
     depends_on:
       - web
     restart: always
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - ./certbot-www:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email your-email@domain.com --agree-tos --no-eff-email -d srijansahay05.in
 
 volumes:
   postgres_data:

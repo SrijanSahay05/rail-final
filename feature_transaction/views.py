@@ -54,7 +54,7 @@ def topup_wallet(request):
                 
                 if result['success']:
                     messages.success(request, result['message'])
-                    return redirect('wallet_dashboard')
+                    return redirect('feature_transaction:wallet_dashboard')
                 else:
                     messages.error(request, result['message'])
             else:
@@ -227,13 +227,19 @@ def payment_page(request, booking_id):
             messages.error(request, 'Insufficient wallet balance')
             return redirect('feature_transaction:topup_wallet')
         
-        # Process payment using simplified flow
+        # Process payment using simplified flow  
         result = WalletService.debit_wallet(
             user=request.user,
             amount=booking.total_fare,
             purpose='PAYMENT',
             description=f'Payment for booking {booking.booking_id}'
         )
+        
+        # Update transaction with booking_id
+        if result['success'] and 'transaction' in result:
+            transaction = result['transaction']
+            transaction.booking_id = booking.booking_id
+            transaction.save()
         
         if result['success']:
             booking.booking_status = 'CONFIRMED'

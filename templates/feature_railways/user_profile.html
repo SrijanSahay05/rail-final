@@ -145,11 +145,12 @@
                         {% for transaction in recent_transactions %}
                         <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                             <div>
-                                <div class="fw-bold">{{ transaction.transaction_type.name }}</div>
-                                <small class="text-muted">{{ transaction.created_at|date:"M d, Y" }}</small>
+                                <div class="fw-bold">{{ transaction.get_purpose_display }}</div>
+                                <small class="text-muted">{{ transaction.created_at|date:"M d, Y H:i" }}</small>
+                                <br><small class="text-muted">{{ transaction.description|truncatechars:30 }}</small>
                             </div>
-                            <div class="fw-bold {% if transaction.transaction_type.is_credit %}text-success{% else %}text-danger{% endif %}">
-                                {% if transaction.transaction_type.is_credit %}+{% else %}-{% endif %}₹{{ transaction.amount }}
+                            <div class="fw-bold {% if transaction.transaction_type == 'CREDIT' %}text-success{% else %}text-danger{% endif %}">
+                                {% if transaction.transaction_type == 'CREDIT' %}+{% else %}-{% endif %}₹{{ transaction.amount }}
                             </div>
                         </div>
                         {% endfor %}

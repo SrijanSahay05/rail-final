@@ -266,7 +266,7 @@ class TransactionService:
             }
     
     @staticmethod
-    def process_refund(user, amount, description):
+    def process_refund(user, amount, description, booking_id=None):
         try:
             result = WalletService.credit_wallet(
                 user=user,
@@ -274,6 +274,12 @@ class TransactionService:
                 purpose='REFUND',
                 description=description
             )
+            
+            # Update transaction with booking_id if provided
+            if result['success'] and booking_id and 'transaction' in result:
+                transaction = result['transaction']
+                transaction.booking_id = booking_id
+                transaction.save()
             
             return result
             

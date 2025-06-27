@@ -121,6 +121,7 @@ class Transaction(models.Model):
     # Transaction details
     description = models.TextField(blank=True)
     reference_number = models.CharField(max_length=100, blank=True)
+    booking_id = models.CharField(max_length=20, blank=True)
     
     # OTP verification
     otp_verification = models.ForeignKey(OTPVerification, on_delete=models.SET_NULL, null=True, blank=True)

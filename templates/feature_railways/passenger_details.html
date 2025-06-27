@@ -35,7 +35,11 @@
                         <div class="col-md-6">
                             <div class="d-flex justify-content-between bg-light p-3 rounded">
                                 <strong>Route:</strong>
-                                <span>{{ train.route.source_station.name }} → {{ train.route.destination_station.name }}</span>
+                                {% if journey_source and journey_destination %}
+                                    <span>{{ journey_source.name }} → {{ journey_destination.name }}</span>
+                                {% else %}
+                                    <span>{{ train.route.source_station.name }} → {{ train.route.destination_station.name }}</span>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -47,7 +51,11 @@
                         <div class="col-md-6">
                             <div class="d-flex justify-content-between bg-light p-3 rounded">
                                 <strong>Time:</strong>
-                                <span>{{ train.departure_date_time|time:"H:i" }} - {{ train.arrival_date_time|time:"H:i" }}</span>
+                                {% if segment_departure and segment_arrival %}
+                                    <span>{{ segment_departure|time:"H:i" }} - {{ segment_arrival|time:"H:i" }}</span>
+                                {% else %}
+                                    <span>{{ train.departure_date_time|time:"H:i" }} - {{ train.arrival_date_time|time:"H:i" }}</span>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -62,6 +70,20 @@
                                 <span>{{ passenger_count }}</span>
                             </div>
                         </div>
+                        {% if journey_source and journey_destination %}
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between bg-light p-3 rounded">
+                                <strong>Journey Duration:</strong>
+                                <span>{{ segment_duration }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between bg-light p-3 rounded">
+                                <strong>Segment Booking:</strong>
+                                <span class="badge bg-info">Yes</span>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <!-- Availability Status -->

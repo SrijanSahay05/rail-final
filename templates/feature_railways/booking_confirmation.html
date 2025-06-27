@@ -41,8 +41,10 @@
                                     <strong>Route:</strong> 
                                     {% if journey_source and journey_destination %}
                                         {{ journey_source.name }} → {{ journey_destination.name }}
+                                        <br><small class="text-muted">Segment booking on {{ train.route.name }}</small>
                                     {% else %}
                                         {{ train.route.source_station.name }} → {{ train.route.destination_station.name }}
+                                        <br><small class="text-muted">Full route: {{ train.route.name }}</small>
                                     {% endif %}
                                 </div>
                             </div>
@@ -59,25 +61,53 @@
                             <div class="col-md-6">
                                 <div class="bg-light p-3 rounded">
                                     <strong>Departure:</strong> 
-                                    {% if journey_source and journey_destination %}
-                                        <!-- Calculate segment timing - placeholder for now -->
-                                        {{ train.departure_date_time|time:"H:i" }}*
+                                    {% if segment_departure %}
+                                        {{ segment_departure|time:"H:i" }}
+                                        <br><small class="text-muted">From {{ journey_source.name }}</small>
                                     {% else %}
                                         {{ train.departure_date_time|time:"H:i" }}
+                                        <br><small class="text-muted">From {{ train.route.source_station.name }}</small>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="bg-light p-3 rounded">
                                     <strong>Arrival:</strong> 
-                                    {% if journey_source and journey_destination %}
-                                        <!-- Calculate segment timing - placeholder for now -->
-                                        {{ train.arrival_date_time|time:"H:i" }}*
+                                    {% if segment_arrival %}
+                                        {{ segment_arrival|time:"H:i" }}
+                                        <br><small class="text-muted">At {{ journey_destination.name }}</small>
                                     {% else %}
                                         {{ train.arrival_date_time|time:"H:i" }}
+                                        <br><small class="text-muted">At {{ train.route.destination_station.name }}</small>
                                     {% endif %}
                                 </div>
                             </div>
+                            {% if journey_source and journey_destination %}
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 rounded">
+                                    <strong>Journey Duration:</strong> {{ segment_duration }}
+                                    <br><small class="text-muted">Route total duration: {{ train.route.journey_duration }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 rounded">
+                                    <strong>Segment Booking:</strong> 
+                                    <span class="badge bg-info">Yes</span>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 rounded">
+                                    <strong>Journey Duration:</strong> {{ train.route.journey_duration }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 rounded">
+                                    <strong>Full Route Booking:</strong> 
+                                    <span class="badge bg-success">Yes</span>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -155,6 +185,26 @@
                             <div class="form-text">This will be used in case of emergency during travel</div>
                         </div>
                         
+                        {% if otp_sent %}
+                        <div class="mb-4">
+                            <label for="{{ form.otp_code.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-shield-alt me-2"></i>{{ form.otp_code.label }}
+                            </label>
+                            {{ form.otp_code }}
+                            {% if form.otp_code.errors %}
+                                <div class="alert alert-danger alert-sm mt-2">
+                                    {% for error in form.otp_code.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Please enter the 6-digit OTP displayed in the message above to verify your booking
+                            </div>
+                        </div>
+                        {% endif %}
+                        
                         <div class="form-check mb-4">
                             {{ form.terms_accepted }}
                             <label class="form-check-label" for="{{ form.terms_accepted.id_for_label }}">
@@ -169,6 +219,54 @@
                             {% endif %}
                         </div>
                         
+                        <!-- Route Information Debug Section -->
+                        <div class="alert alert-light border">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>Route & Train Information
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Route Details:</strong>
+                                    <ul class="small mb-2">
+                                        <li>Route Code: {{ train.route.code }}</li>
+                                        <li>Route Name: {{ train.route.name }}</li>
+                                        <li>Scheduled Departure: {{ train.route.departure_time }}</li>
+                                        <li>Scheduled Arrival: {{ train.route.arrival_time }}</li>
+                                        <li>Route Duration: {{ train.route.journey_duration }}</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Train Details:</strong>
+                                    <ul class="small mb-2">
+                                        <li>Train ID: #{{ train.id }}</li>
+                                        <li>Actual Departure: {{ train.departure_date_time|date:"M d, Y H:i" }}</li>
+                                        <li>Calculated Arrival: {{ train.arrival_date_time|date:"M d, Y H:i" }}</li>
+                                        {% if journey_source and journey_destination %}
+                                        <li>Your Departure: {{ segment_departure|date:"M d, Y H:i" }}</li>
+                                        <li>Your Arrival: {{ segment_arrival|date:"M d, Y H:i" }}</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OTP Information (if sent) -->
+                        {% if otp_sent %}
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-shield-alt me-2"></i>OTP Verification Required
+                            </h6>
+                            <p class="mb-2">
+                                <i class="fas fa-lock me-1"></i>
+                                <strong>An OTP has been sent for booking verification.</strong>
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Please check the message displayed above and enter the 6-digit OTP code to complete your booking.
+                            </p>
+                        </div>
+                        {% endif %}
+
                         <!-- Important Information -->
                         <div class="alert alert-info">
                             <h6 class="alert-heading">
@@ -180,6 +278,12 @@
                                 <li>Seat assignments will be final and cannot be changed</li>
                                 <li>Cancellation charges may apply as per railway rules</li>
                                 <li>Food and beverages are available on board (charges apply)</li>
+                                {% if journey_source and journey_destination %}
+                                <li><strong>Segment Booking:</strong> You will board at {{ journey_source.name }} and alight at {{ journey_destination.name }}</li>
+                                {% endif %}
+                                {% if not otp_sent %}
+                                <li><strong>Security:</strong> An OTP will be required to verify and confirm your booking</li>
+                                {% endif %}
                             </ul>
                         </div>
                         
@@ -190,7 +294,11 @@
                             </a>
                             <button type="submit" class="btn btn-success btn-lg">
                                 <span class="btn-text">
-                                    <i class="fas fa-check me-2"></i>Confirm Booking
+                                    {% if otp_sent %}
+                                        <i class="fas fa-check-circle me-2"></i>Verify OTP & Confirm Booking
+                                    {% else %}
+                                        <i class="fas fa-shield-alt me-2"></i>Send OTP & Continue
+                                    {% endif %}
                                 </span>
                                 <span class="btn-loading" style="display: none;">
                                     <i class="fas fa-spinner fa-spin me-2"></i>Processing...
@@ -214,5 +322,16 @@ document.getElementById('confirmationForm').addEventListener('submit', function(
     btnLoading.style.display = 'inline-block';
     btn.disabled = true;
 });
+
+// Auto-focus on OTP field if it exists and is visible
+{% if otp_sent %}
+document.addEventListener('DOMContentLoaded', function() {
+    const otpField = document.getElementById('{{ form.otp_code.id_for_label }}');
+    if (otpField) {
+        otpField.focus();
+        otpField.select();
+    }
+});
+{% endif %}
 </script>
 {% endblock %}

@@ -8,6 +8,14 @@
 <div class="container bg-white text-black py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
+            <!-- Current Time Display -->
+            {% if current_time %}
+            <div class="alert alert-info text-center mb-4">
+                <i class="fas fa-clock me-2"></i>
+                <strong>Current Time:</strong> {{ current_time|date:"F j, Y" }} at {{ current_time|time:"H:i" }}
+            </div>
+            {% endif %}
+            
             <!-- Header -->
             <div class="text-center mb-5">
                 <h1 class="display-5 fw-bold text-primary">
@@ -42,7 +50,13 @@
                                     {{ train.route.source_station.code|upper }}
                                 {% endif %}
                             </span>
-                            <div class="small text-muted mt-1">{{ train.departure_date_time|date:"M d, Y H:i" }}</div>
+                            <div class="small text-muted mt-1">
+                                {% if segment_departure %}
+                                    {{ segment_departure|date:"M d, Y H:i" }}
+                                {% else %}
+                                    {{ train.departure_date_time|date:"M d, Y H:i" }}
+                                {% endif %}
+                            </div>
                         </div>
                         
                         <div class="col-md-4 text-center">
@@ -75,7 +89,13 @@
                                     {{ train.route.destination_station.code|upper }}
                                 {% endif %}
                             </span>
-                            <div class="small text-muted mt-1">{{ train.arrival_date_time|date:"M d, Y H:i" }}</div>
+                            <div class="small text-muted mt-1">
+                                {% if segment_arrival %}
+                                    {{ segment_arrival|date:"M d, Y H:i" }}
+                                {% else %}
+                                    {{ train.arrival_date_time|date:"M d, Y H:i" }}
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     
@@ -85,6 +105,45 @@
                         <h6 class="text-primary mb-0">{{ train.route.name|title }}</h6>
                         <span class="text-success fw-bold">Starting from ₹{{ train.route.base_fare }}</span>
                     </div>
+                    
+                    {% if journey_source and journey_destination %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Segment Booking:</strong> You're booking from {{ journey_source.name }} to {{ journey_destination.name }} 
+                        ({{ segment_duration }} journey)
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Departure Status -->
+                    {% if current_time %}
+                        {% if segment_departure %}
+                            {% if segment_departure <= current_time %}
+                                <div class="alert alert-danger mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Warning:</strong> This segment has already departed at {{ segment_departure|time:"H:i" }}. 
+                                    Booking is not available for departed segments.
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success mt-3 mb-0">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <strong>Segment Available:</strong> This segment departs at {{ segment_departure|time:"H:i" }}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            {% if train.departure_date_time <= current_time %}
+                                <div class="alert alert-danger mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Warning:</strong> This train has already departed at {{ train.departure_date_time|time:"H:i" }}. 
+                                    Booking is not available for departed trains.
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success mt-3 mb-0">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <strong>Train Available:</strong> This train departs at {{ train.departure_date_time|time:"H:i" }}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
             
@@ -124,7 +183,7 @@
                                                     <span class="badge bg-success">{{ availability.available_seats }} Available</span>
                                                 {% endif %}
                                             </div>
-                                            <small class="text-muted">₹{{ availability.price }} per person</small>
+                                            <small class="text-muted">₹{{ availability.price }} per hour</small>
                                         </div>
                                     </div>
                                 </div>
@@ -174,33 +233,59 @@
                                     <span>Base Fare</span>
                                     <span>₹{{ train.route.base_fare }}</span>
                                 </div>
-                                <hr>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong>Total (estimated)</strong>
-                                    <strong class="text-success total-amount">₹{{ train.route.base_fare }}</strong>
+                                {% if journey_source and journey_destination %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Travel Duration</span>
+                                    <span>{{ segment_duration }}</span>
                                 </div>
+                                {% endif %}
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center fw-bold">
+                                    <span>Estimated Total</span>
+                                    <span class="text-primary">₹<span id="estimated-total">--</span></span>
+                                </div>
+                                <small class="text-muted">Final fare will be calculated based on seat class and passenger count</small>
                             </div>
                         </div>
                         
                         <!-- Submit Button -->
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <span class="btn-text">
-                                    <i class="fas fa-credit-card me-2"></i>Proceed to Book
-                                </span>
-                                <span class="btn-loading" style="display: none;">
-                                    <i class="fas fa-spinner fa-spin me-2"></i>Processing...
-                                </span>
-                            </button>
+                        <div class="text-center mt-4">
+                            {% if current_time %}
+                                {% if segment_departure %}
+                                    {% if segment_departure <= current_time %}
+                                        <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                            <i class="fas fa-ban me-2"></i>Segment Has Departed
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-arrow-right me-2"></i>Continue to Passenger Details
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    {% if train.departure_date_time <= current_time %}
+                                        <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                            <i class="fas fa-ban me-2"></i>Train Has Departed
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-arrow-right me-2"></i>Continue to Passenger Details
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            {% else %}
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-arrow-right me-2"></i>Continue to Passenger Details
+                                </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>
             </div>
             
-            <!-- Navigation Actions -->
+            <!-- Back Button -->
             <div class="text-center mt-4">
                 <a href="{% url 'feature_railways:search_trains' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Search
+                    <i class="fas fa-arrow-left me-2"></i>Back to Search Results
                 </a>
             </div>
         </div>
@@ -208,97 +293,27 @@
 </div>
 
 <script>
+// Auto-refresh current time every minute
+setInterval(function() {
+    const now = new Date();
+    const timeElement = document.querySelector('.alert-info strong');
+    if (timeElement) {
+        const timeString = now.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        timeElement.textContent = 'Current Time: ' + timeString;
+    }
+}, 60000);
+
+// Form submission handling
 document.getElementById('bookingForm').addEventListener('submit', function(e) {
     const btn = this.querySelector('button[type="submit"]');
-    const btnText = btn.querySelector('.btn-text');
-    const btnLoading = btn.querySelector('.btn-loading');
-    
-    btnText.style.display = 'none';
-    btnLoading.style.display = 'inline-block';
     btn.disabled = true;
-});
-
-// Seat availability data from Django
-const seatAvailability = {
-    {% for seat_class_id, availability in seat_availability.items %}
-    {{ seat_class_id }}: {
-        available_seats: {{ availability.available_seats }},
-        total_seats: {{ availability.total_seats }},
-        price: {{ availability.price }},
-        class_type: "{{ availability.seat_class.class_type }}"
-    }{% if not forloop.last %},{% endif %}
-    {% endfor %}
-};
-
-// Dynamic fare calculation and availability checking
-const seatClassSelect = document.getElementById('seat-class-select');
-const passengerCountInput = document.getElementById('passenger-count-input');
-const baseFare = parseFloat('{{ train.route.base_fare }}');
-
-function updateBookingInfo() {
-    const selectedSeatClassId = seatClassSelect.value;
-    const passengerCount = parseInt(passengerCountInput.value) || 1;
-    
-    if (selectedSeatClassId && seatAvailability[selectedSeatClassId]) {
-        const availability = seatAvailability[selectedSeatClassId];
-        
-        // Update fare calculation
-        const total = availability.price * passengerCount;
-        const totalAmountElement = document.querySelector('.total-amount');
-        if (totalAmountElement) {
-            totalAmountElement.textContent = '₹' + total;
-        }
-        
-        // Update seat availability info
-        const seatAvailabilityInfo = document.getElementById('seat-availability-info');
-        if (seatAvailabilityInfo) {
-            if (availability.available_seats === 0) {
-                seatAvailabilityInfo.innerHTML = '<small class="text-danger"><i class="fas fa-times-circle me-1"></i>No seats available in this class</small>';
-            } else if (availability.available_seats < passengerCount) {
-                seatAvailabilityInfo.innerHTML = `<small class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Only ${availability.available_seats} seats available</small>`;
-            } else {
-                seatAvailabilityInfo.innerHTML = `<small class="text-success"><i class="fas fa-check-circle me-1"></i>${availability.available_seats} seats available</small>`;
-            }
-        }
-        
-        // Update passenger count warning
-        const passengerWarning = document.getElementById('passenger-availability-warning');
-        if (passengerWarning) {
-            if (passengerCount > availability.available_seats) {
-                passengerWarning.innerHTML = `<small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Not enough seats! Only ${availability.available_seats} available</small>`;
-            } else {
-                passengerWarning.innerHTML = '';
-            }
-        }
-        
-        // Enable/disable submit button based on availability
-        const submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            if (availability.available_seats === 0 || passengerCount > availability.available_seats) {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('disabled');
-                submitBtn.innerHTML = '<i class="fas fa-times me-2"></i>Not Available';
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('disabled');
-                submitBtn.innerHTML = '<span class="btn-text"><i class="fas fa-credit-card me-2"></i>Proceed to Book</span><span class="btn-loading" style="display: none;"><i class="fas fa-spinner fa-spin me-2"></i>Processing...</span>';
-            }
-        }
-    }
-}
-
-// Add event listeners
-if (seatClassSelect) {
-    seatClassSelect.addEventListener('change', updateBookingInfo);
-}
-if (passengerCountInput) {
-    passengerCountInput.addEventListener('change', updateBookingInfo);
-    passengerCountInput.addEventListener('input', updateBookingInfo);
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    updateBookingInfo();
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
 });
 </script>
 {% endblock %}

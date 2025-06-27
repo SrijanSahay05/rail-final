@@ -8,34 +8,267 @@
 <div class="container bg-white text-black py-5">
     <div class="text-center mb-4">
         <h1 class="text-2xl font-bold">Add Route Halt</h1>
+        <p class="text-gray-600">Add intermediate stations to a route for segment bookings</p>
     </div>
+
+    <!-- Information Alert -->
+    <div class="alert alert-info mb-4">
+        <h5 class="alert-heading">
+            <i class="fas fa-info-circle me-2"></i>About Route Halts
+        </h5>
+        <p class="mb-2">Route halts allow passengers to book tickets for segments of a journey (e.g., from halt station A to halt station B).</p>
+        <ul class="mb-0">
+            <li><strong>Sequence Number:</strong> Order of this station in the route (1, 2, 3, etc.)</li>
+            <li><strong>Journey Duration from Source:</strong> Time taken from the route's source station to this halt station</li>
+            <li>This information is used to calculate segment-to-segment fare and timing</li>
+        </ul>
+    </div>
+
+    <!-- Route Context Section -->
+    {% if routes_with_halts %}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-route me-2"></i>Current Route Information
+            </h5>
+        </div>
+        <div class="card-body">
+            {% for route_info in routes_with_halts %}
+            <div class="mb-3 p-3 border rounded {% if not route_info.is_valid %}border-warning{% else %}border-success{% endif %}">
+                <h6 class="fw-bold">{{ route_info.route.name }} ({{ route_info.route.code }})</h6>
+                <p class="mb-2">
+                    <small class="text-muted">
+                        {{ route_info.route.source_station.name }} → {{ route_info.route.destination_station.name }}
+                        ({{ route_info.route.journey_duration }})
+                    </small>
+                </p>
+                
+                {% if route_info.halts %}
+                <div class="mb-2">
+                    <strong>Current Halts:</strong>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        {% for halt in route_info.halts %}
+                        <span class="badge bg-primary">
+                            {{ halt.sequence_number }}. {{ halt.station.name }} ({{ halt.journey_duration_from_source }})
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-2">No halt stations configured yet.</p>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Next sequence number: <strong>{{ route_info.next_sequence }}</strong>
+                    </small>
+                    
+                    {% if not route_info.is_valid %}
+                    <div class="text-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <small>Route has validation issues</small>
+                    </div>
+                    {% else %}
+                    <div class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <small>Route is valid</small>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if not route_info.is_valid and route_info.errors %}
+                <div class="mt-2">
+                    <small class="text-warning">
+                        <strong>Issues:</strong>
+                        <ul class="mb-0 mt-1">
+                            {% for error in route_info.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <form method="post" class="mb-5">
         {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="alert alert-danger mb-4">
+            <h5 class="alert-heading">Please correct the following errors:</h5>
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <p class="mb-1"><strong>{{ field|title }}:</strong> {{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
         <div class="row g-3">
             <div class="col-md-6">
-                <label for="{{ form.route.id_for_label }}" class="form-label">{{ form.route.label }}</label>
+                <label for="{{ form.route.id_for_label }}" class="form-label fw-bold">
+                    <i class="fas fa-route me-2"></i>{{ form.route.label }}
+                </label>
                 {{ form.route }}
+                {% if form.route.errors %}
+                    <div class="alert alert-danger alert-sm mt-2">
+                        {% for error in form.route.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
             <div class="col-md-6">
-                <label for="{{ form.station.id_for_label }}" class="form-label">{{ form.station.label }}</label>
+                <label for="{{ form.station.id_for_label }}" class="form-label fw-bold">
+                    <i class="fas fa-map-marker-alt me-2"></i>{{ form.station.label }}
+                </label>
                 {{ form.station }}
+                {% if form.station.errors %}
+                    <div class="alert alert-danger alert-sm mt-2">
+                        {% for error in form.station.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
         </div>
+        
         <div class="row g-3 mt-3">
             <div class="col-md-6">
-                <label for="{{ form.sequence_number.id_for_label }}" class="form-label">{{ form.sequence_number.label }}</label>
+                <label for="{{ form.sequence_number.id_for_label }}" class="form-label fw-bold">
+                    <i class="fas fa-sort-numeric-up me-2"></i>{{ form.sequence_number.label }}
+                </label>
                 {{ form.sequence_number }}
-                <small class="text-muted">Order of this station in the route (1, 2, 3, etc.)</small>
+                <div class="form-text">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Order of this station in the route (1, 2, 3, etc.). Source station is 0, destination is last.
+                </div>
+                {% if form.sequence_number.errors %}
+                    <div class="alert alert-danger alert-sm mt-2">
+                        {% for error in form.sequence_number.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.journey_duration_from_source.id_for_label }}" class="form-label fw-bold">
+                    <i class="fas fa-clock me-2"></i>{{ form.journey_duration_from_source.label }}
+                </label>
+                {{ form.journey_duration_from_source }}
+                <div class="form-text">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Duration from the route's source station to this halt station (e.g., 01:30:00 for 1 hour 30 minutes)
+                </div>
+                {% if form.journey_duration_from_source.errors %}
+                    <div class="alert alert-danger alert-sm mt-2">
+                        {% for error in form.journey_duration_from_source.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
         </div>
+        
+        <!-- Validation Rules Section -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Validation Rules
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Sequence number must be greater than 0 and follow the order (1, 2, 3, etc.)</li>
+                    <li>Journey duration must be greater than 0 and less than the route's total duration</li>
+                    <li>Later halts must have longer journey durations than earlier halts</li>
+                    <li>Cannot use source or destination stations as halt stations</li>
+                    <li>Each station can only be used once per route</li>
+                    <li>Sequence numbers must be consecutive (no gaps)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Example Section -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Example
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">For a route: <strong>Delhi → Mumbai</strong> (6 hours total)</p>
+                <ul class="mb-0">
+                    <li><strong>Delhi (Source):</strong> Sequence 0, Duration 00:00:00</li>
+                    <li><strong>Jaipur (Halt):</strong> Sequence 1, Duration 02:30:00 (2.5 hours from Delhi)</li>
+                    <li><strong>Ahmedabad (Halt):</strong> Sequence 2, Duration 04:00:00 (4 hours from Delhi)</li>
+                    <li><strong>Mumbai (Destination):</strong> Sequence 3, Duration 06:00:00 (6 hours from Delhi)</li>
+                </ul>
+                <p class="mt-2 mb-0"><small class="text-muted">This allows bookings like Delhi→Jaipur, Jaipur→Ahmedabad, etc.</small></p>
+            </div>
+        </div>
+        
         <div class="text-center mt-4">
-            <button type="submit" class="btn btn-primary">Add Halt</button>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>Add Halt Station
+            </button>
         </div>
     </form>
 
     <div class="text-center mt-4">
-        <a href="{% url 'feature_railways:railway_staff_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        <a href="{% url 'feature_railways:railway_staff_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
     </div>
 </div>
+
+<script>
+// Auto-populate sequence number when route is selected
+document.getElementById('{{ form.route.id_for_label }}').addEventListener('change', function() {
+    const routeId = this.value;
+    if (routeId) {
+        // Find the next sequence number for this route
+        const routeInfo = {{ routes_with_halts|safe }};
+        const selectedRoute = routeInfo.find(r => r.route.id == routeId);
+        if (selectedRoute) {
+            document.getElementById('{{ form.sequence_number.id_for_label }}').value = selectedRoute.next_sequence;
+        }
+    }
+});
+
+// Show validation hints
+document.getElementById('{{ form.journey_duration_from_source.id_for_label }}').addEventListener('input', function() {
+    const duration = this.value;
+    const routeSelect = document.getElementById('{{ form.route.id_for_label }}');
+    const routeId = routeSelect.value;
+    
+    if (routeId && duration) {
+        const routeInfo = {{ routes_with_halts|safe }};
+        const selectedRoute = routeInfo.find(r => r.route.id == routeId);
+        
+        if (selectedRoute && selectedRoute.halts.length > 0) {
+            const lastHalt = selectedRoute.halts[selectedRoute.halts.length - 1];
+            const lastDuration = lastHalt.journey_duration_from_source;
+            
+            // Show hint about duration requirements
+            const hint = document.createElement('div');
+            hint.className = 'alert alert-info alert-sm mt-2';
+            hint.innerHTML = `<small>Duration should be longer than the last halt (${lastDuration})</small>`;
+            
+            // Remove existing hint
+            const existingHint = this.parentNode.querySelector('.alert-info');
+            if (existingHint) {
+                existingHint.remove();
+            }
+            
+            this.parentNode.appendChild(hint);
+        }
+    }
+});
+</script>
 {% endblock %}
