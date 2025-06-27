@@ -44,7 +44,7 @@ class Route(models.Model):
     departure_time = models.TimeField()
     journey_duration = models.DurationField()
     destination_station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='route_as_destination')
-    arrival_time = models.TimeField()
+    arrival_time = models.TimeField(null=True)
     running_days = models.CharField(max_length=7, null=True, blank=True)
 
     def __str__(self):
@@ -83,11 +83,11 @@ class Train(models.Model):
 class TrainSegment(models.Model):
     train = models.ForeignKey(Train, on_delete=models.CASCADE, related_name='segments')
     segment_source = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='segments_as_source')
-    departure_date_time = models.DateTimeField()
+    departure_date_time = models.DateTimeField(null=True)
     segment_destination = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='segment_as_destination')
-    arrival_date_time = models.DateTimeField()
+    arrival_date_time = models.DateTimeField(null=True)
     segment_number = models.PositiveIntegerField()
-    segment_journey_duration = models.DurationField()
+    segment_journey_duration = models.DurationField(null=True)
 
     def __str__(self):
         return f"Train Segment on {self.train.route.code} [{self.segment_source.code} to {self.segment_destination.code} ({self.segment_number})]"
