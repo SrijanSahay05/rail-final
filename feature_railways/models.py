@@ -173,3 +173,65 @@ class Booking(models.Model):
         self.is_verified = True
         self.verification_timestamp = timezone.now()
         self.save()
+
+    @property
+    def actual_source_station(self):
+        """Return the actual source station - journey_source for segments, route source for full journey"""
+        if self.journey_source:
+            return self.journey_source
+        return self.train.route.source_station
+    
+    @property
+    def actual_destination_station(self):
+        """Return the actual destination station - journey_destination for segments, route destination for full journey"""
+        if self.journey_destination:
+            return self.journey_destination
+        return self.train.route.destination_station
+    
+    @property
+    def actual_departure_time(self):
+        """Return the actual departure time - computed for segments, train departure for full journey"""
+        if self.departure_datetime:
+            return self.departure_datetime
+        return self.train.departure_date_time
+    
+    @property
+    def actual_arrival_time(self):
+        """Return the actual arrival time - computed for segments, train arrival for full journey"""
+        if self.arrival_datetime:
+            return self.arrival_datetime
+        return self.train.arrival_date_time
+    
+    @property
+    def actual_journey_duration(self):
+        """Return the actual journey duration for both segment and full bookings"""
+        if self.departure_datetime and self.arrival_datetime:
+            duration = self.arrival_datetime - self.departure_datetime
+            hours = duration.total_seconds() // 3600
+            minutes = (duration.total_seconds() % 3600) // 60
+            if hours >= 1:
+                return f"{int(hours)}h {int(minutes)}m"
+            else:
+                return f"{int(minutes)}m"
+        else:
+            # For full journey bookings, calculate from route
+            route_duration = self.train.route.journey_duration
+            hours = route_duration.total_seconds() // 3600
+            minutes = (route_duration.total_seconds() % 3600) // 60
+            if hours >= 1:
+                return f"{int(hours)}h {int(minutes)}m"
+            else:
+                return f"{int(minutes)}m"
+    
+    @property
+    def is_segment_booking(self):
+        """Check if this is a segment booking or full journey booking"""
+        return self.journey_source is not None and self.journey_destination is not None
+    
+    @property
+    def journey_type_display(self):
+        """Return a display string for the journey type"""
+        if self.is_segment_booking:
+            return f"Segment Journey ({self.actual_source_station.code} → {self.actual_destination_station.code})"
+        else:
+            return f"Complete Journey ({self.actual_source_station.code} → {self.actual_destination_station.code})"

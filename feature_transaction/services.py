@@ -14,7 +14,7 @@ class WalletService:
     @transaction.atomic
     def credit_wallet(user, amount, purpose='TOPUP', description='', otp_verification=None):
         try:
-            wallet = user.wallet
+            wallet = Wallet.objects.select_for_update().get(user=user)
             
             balance_before = wallet.balance
             
@@ -53,7 +53,7 @@ class WalletService:
     @transaction.atomic
     def debit_wallet(user, amount, purpose='PAYMENT', description='', otp_verification=None):
         try:
-            wallet = user.wallet
+            wallet = Wallet.objects.select_for_update().get(user=user)
             
             if wallet.balance < amount:
                 return {
@@ -114,17 +114,20 @@ class WalletService:
     @staticmethod
     def get_transaction_history(user, limit=10):
         try:
-            transactions = Transaction.objects.filter(user=user)[:limit]
+            transactions = Transaction.objects.filter(user=user).order_by('-created_at')
+            if limit:
+                transactions = transactions[:limit]
+            
             return {
                 'success': True,
                 'transactions': transactions,
-                'count': transactions.count()
+                'count': transactions.count() if hasattr(transactions, 'count') else len(transactions)
             }
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
-                'transactions': []
+                'transactions': [],
+                'error': str(e)
             }
 
 
@@ -275,7 +278,6 @@ class TransactionService:
                 description=description
             )
             
-            # Update transaction with booking_id if provided
             if result['success'] and booking_id and 'transaction' in result:
                 transaction = result['transaction']
                 transaction.booking_id = booking_id

@@ -17,9 +17,8 @@ from .forms import (
     TrainSearchForm, BookingForm, StationForm, SeatClassForm, RouteForm,
     RouteHaltForm, RouteSeatClassForm, TrainGenerationForm, PassengerDetailForm, PassengerFormSet, BookingConfirmationForm
 )
-from .services import generate_trains_on_route, get_train_generation_summary
+from .services import generate_trains_on_route, get_train_generation_summary, get_segment_timing
 from .booking_services import BookingService
-from .simple_services import get_segment_timing
 from feature_transaction.services import WalletService
 
 def is_staff(user):
@@ -40,7 +39,13 @@ def search_trains(request):
         date = form.cleaned_data['date']
         
         if source == destination:
-            raise ValidationError("Source and destination stations cannot be the same.")
+            messages.error(request, "Source and destination stations cannot be the same. Please select different stations.")
+            return render(request, 'feature_railways/search_results.html', {
+                'form': form,
+                'trains': [],
+                'search_source': None,
+                'search_destination': None
+            })
         
         search_source = source
         search_destination = destination
@@ -420,7 +425,10 @@ def booking_confirmation(request):
                 else:
                     messages.error(request, f"Failed to send OTP: {otp_result['message']}")
             else:
-                if otp_code_submitted == otp_code:
+                from feature_transaction.services import OTPService
+                otp_verify_result = OTPService.verify_otp(request.user, otp_code_submitted, 'PAYMENT')
+                
+                if otp_verify_result['success']:
                     result = BookingService.create_booking(
                         user=request.user,
                         train=train,
@@ -446,7 +454,7 @@ def booking_confirmation(request):
                     else:
                         messages.error(request, result['message'])
                 else:
-                    messages.error(request, "Invalid OTP. Please check the code and try again.")
+                    messages.error(request, f"OTP verification failed: {otp_verify_result['message']}")
     else:
         form = BookingConfirmationForm()
     
@@ -660,16 +668,20 @@ def booking_detail(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id, user=request.user)
     from .booking_services import BookingService
     booking_summary = BookingService.get_booking_summary(booking)
+    
     show_cancel_button = False
     if booking.booking_status == 'CONFIRMED':
         current_time = timezone.now()
-        departure_time = booking.train.departure_date_time
+        # Use actual departure time for segment bookings
+        departure_time = booking.actual_departure_time
         show_cancel_button = (current_time + timedelta(hours=1) <= departure_time)
     context = {
         'booking': booking,
         'booking_summary': booking_summary,
         'qr_data': booking.get_qr_data(),
         'show_cancel_button': show_cancel_button,
+        'current_time': timezone.now(),
+        'is_segment_booking': booking.journey_source is not None and booking.journey_destination is not None,
     }
     return render(request, 'feature_railways/booking_detail.html', context)
 

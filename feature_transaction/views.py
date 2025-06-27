@@ -188,11 +188,20 @@ def process_payment(request):
                 'message': 'OTP is required'
             })
         
+        otp_verify_result = OTPService.verify_otp(request.user, otp_code, 'PAYMENT')
+        
+        if not otp_verify_result['success']:
+            return JsonResponse({
+                'success': False,
+                'message': f"OTP verification failed: {otp_verify_result['message']}"
+            })
+        
         result = WalletService.debit_wallet(
             user=request.user, 
             amount=amount, 
             purpose='PAYMENT',
-            description=description
+            description=description,
+            otp_verification=otp_verify_result['otp_verification']
         )
         
         if result['success']:
@@ -227,27 +236,16 @@ def payment_page(request, booking_id):
             messages.error(request, 'Insufficient wallet balance')
             return redirect('feature_transaction:topup_wallet')
         
-        # Process payment using simplified flow  
-        result = WalletService.debit_wallet(
-            user=request.user,
-            amount=booking.total_fare,
-            purpose='PAYMENT',
-            description=f'Payment for booking {booking.booking_id}'
-        )
+        otp_code = request.POST.get('otp_code')
         
-        # Update transaction with booking_id
-        if result['success'] and 'transaction' in result:
-            transaction = result['transaction']
-            transaction.booking_id = booking.booking_id
-            transaction.save()
-        
-        if result['success']:
-            booking.booking_status = 'CONFIRMED'
-            booking.save()
-            messages.success(request, 'Payment successful! Your booking is confirmed.')
-            return redirect('feature_railways:booking_detail', booking_id=booking.booking_id)
+        otp_result = OTPService.send_otp(request.user, 'PAYMENT')
+        if otp_result['success']:
+            request.session['payment_booking_id'] = booking.booking_id
+            request.session['payment_amount'] = str(booking.total_fare)
+            messages.info(request, f"OTP sent for payment verification. Your OTP is: {otp_result['otp_code']}")
+            return redirect('feature_transaction:verify_payment_otp', booking_id=booking.booking_id)
         else:
-            messages.error(request, result['message'])
+            messages.error(request, f"Failed to send OTP: {otp_result['message']}")
     
     context = {
         'booking': booking,
@@ -256,6 +254,98 @@ def payment_page(request, booking_id):
     }
     
     return render(request, 'feature_transaction/payment_page.html', context)
+
+
+@login_required
+def verify_payment_otp(request, booking_id):
+    """OTP verification page for payment"""
+    from feature_railways.models import Booking
+    
+    booking = get_object_or_404(Booking, booking_id=booking_id, user=request.user)
+    
+    if booking.booking_status == 'CONFIRMED':
+        messages.info(request, 'This booking is already paid')
+        return redirect('feature_railways:booking_detail', booking_id=booking.booking_id)
+    
+    session_booking_id = request.session.get('payment_booking_id')
+    if session_booking_id != booking_id:
+        messages.error(request, 'Invalid payment session')
+        return redirect('feature_transaction:payment_page', booking_id=booking_id)
+    
+    if request.method == 'POST':
+        otp_code = request.POST.get('otp_code')
+        
+        if not otp_code:
+            messages.error(request, 'Please enter the OTP code')
+        else:
+            otp_verify_result = OTPService.verify_otp(request.user, otp_code, 'PAYMENT')
+            
+            if otp_verify_result['success']:
+                result = WalletService.debit_wallet(
+                    user=request.user,
+                    amount=booking.total_fare,
+                    purpose='PAYMENT',
+                    description=f'Payment for booking {booking.booking_id}',
+                    otp_verification=otp_verify_result['otp_verification']
+                )
+                
+                if result['success'] and 'transaction' in result:
+                    transaction = result['transaction']
+                    transaction.booking_id = booking.booking_id
+                    transaction.save()
+                
+                if result['success']:
+                    booking.booking_status = 'CONFIRMED'
+                    booking.save()
+                    
+                    # Clear session
+                    request.session.pop('payment_booking_id', None)
+                    request.session.pop('payment_amount', None)
+                    
+                    messages.success(request, 'Payment successful! Your booking is confirmed.')
+                    return redirect('feature_railways:booking_detail', booking_id=booking.booking_id)
+                else:
+                    messages.error(request, result['message'])
+            else:
+                messages.error(request, f"OTP verification failed: {otp_verify_result['message']}")
+    
+    context = {
+        'booking': booking,
+        'transaction_type': 'Payment',
+        'amount': booking.total_fare,
+        'method': 'Wallet Debit'
+    }
+    
+    return render(request, 'feature_transaction/verify_otp.html', context)
+
+
+@login_required
+@require_POST
+def resend_otp(request):
+    """Resend OTP for payment verification"""
+    try:
+        data = json.loads(request.body)
+        transaction_type = data.get('transaction_type', 'payment')
+        
+        purpose_map = {
+            'topup_wallet': 'WALLET_TOPUP',
+            'payment': 'PAYMENT'
+        }
+        
+        purpose = purpose_map.get(transaction_type, 'PAYMENT')
+        
+        result = OTPService.send_otp(request.user, purpose)
+        
+        if result['success']:
+            result['otp_code'] = result.get('otp_code')  # For testing
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
 
 
 @login_required

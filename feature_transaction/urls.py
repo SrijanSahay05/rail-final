@@ -18,4 +18,6 @@ urlpatterns = [
     path('api/send-otp/', views.send_otp, name='send_otp'),
     path('api/verify-otp/', views.verify_otp, name='verify_otp'),
     path('api/process-payment/', views.process_payment, name='process_payment'),
+    path('verify-payment-otp/<str:booking_id>/', views.verify_payment_otp, name='verify_payment_otp'),
+    path('api/resend-otp/', views.resend_otp, name='resend_otp'),
 ]

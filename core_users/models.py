@@ -13,7 +13,7 @@ class CustomUser(AbstractUser):
         default='PASSENGER'
     )
     is_railway_staff = models.BooleanField(default=False)
-    migration_fix = models.CharField(default='fixed')    
+    migration_fix = models.CharField(default='fixed')    #was added for production database migration debugging
 
     def __str__(self):
         if self.first_name and self.last_name:

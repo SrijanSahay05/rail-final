@@ -401,6 +401,8 @@ class BookingService:
             passengers = booking.passengers.all()
             
             seat_assignments = []
+            segment_details = []
+            
             for passenger in passengers:
                 # Get the seat booking for this passenger
                 seat_booking = SeatBooking.objects.filter(
@@ -414,11 +416,45 @@ class BookingService:
                         'seat_number': seat_booking.train_seat.seat_number
                     })
             
+            # Get segment information for segment bookings
+            if booking.journey_source and booking.journey_destination:
+                # This is a segment booking
+                segments = SeatBooking.objects.filter(
+                    passenger__booking=booking,
+                    train_seat__train=booking.train
+                ).values_list('train_segment', flat=True).distinct()
+                
+                for segment_id in segments:
+                    try:
+                        from .models import TrainSegment
+                        segment = TrainSegment.objects.get(id=segment_id)
+                        segment_details.append({
+                            'segment_number': segment.segment_number,
+                            'source': segment.segment_source,
+                            'destination': segment.segment_destination,
+                            'departure_time': segment.departure_date_time,
+                            'arrival_time': segment.arrival_date_time
+                        })
+                    except:
+                        continue
+            
+            # Calculate fare breakdown
+            fare_breakdown = {
+                'total_fare': booking.total_fare,
+                'per_passenger_fare': booking.total_fare / booking.passenger_count if booking.passenger_count > 0 else 0,
+                'passenger_count': booking.passenger_count
+            }
+            
             return {
                 'booking': booking,
                 'passengers': passengers,
                 'seat_assignments': seat_assignments,
-                'passenger_count': passengers.count()
+                'passenger_count': passengers.count(),
+                'segment_details': segment_details,
+                'fare_breakdown': fare_breakdown,
+                'is_segment_booking': booking.journey_source is not None and booking.journey_destination is not None,
+                'route': booking.train.route,
+                'train': booking.train
             }
             
         except Exception as e:

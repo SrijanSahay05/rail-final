@@ -114,19 +114,16 @@ class Transaction(models.Model):
     purpose = models.CharField(max_length=20, choices=TRANSACTION_PURPOSE_CHOICES)
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS_CHOICES, default='PENDING')
     
-    # Wallet balance tracking
+    # TODO : Rahul Mausaji asked to add this for better record maintaince of user balance after every transaction
     wallet_balance_before = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     wallet_balance_after = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     
-    # Transaction details
     description = models.TextField(blank=True)
     reference_number = models.CharField(max_length=100, blank=True)
     booking_id = models.CharField(max_length=20, blank=True)
     
-    # OTP verification
     otp_verification = models.ForeignKey(OTPVerification, on_delete=models.SET_NULL, null=True, blank=True)
     
-    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
