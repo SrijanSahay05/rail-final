@@ -1,9 +1,4 @@
-"""
-Had to go and add it from admin-page, used ai tool to write a script for automating that. I need to understand
-what is going on here. :)
-"""
-
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Script to set up Google OAuth2 application for Django-Allauth
 """
@@ -21,7 +16,6 @@ django.setup()
 from django.contrib.sites.models import Site
 from allauth.socialaccount.models import SocialApp
 
-
 def setup_google_oauth():
     # Get or create the site
     site, created = Site.objects.get_or_create(
@@ -31,7 +25,7 @@ def setup_google_oauth():
             'name': 'srijansahay05.in'
         }
     )
-
+    
     if created:
         print(f"Created site: {site.domain}")
     else:
@@ -41,15 +35,15 @@ def setup_google_oauth():
         site.name = 'srijansahay05.in'
         site.save()
         print(f"Updated site: {site.domain}")
-
+    
     # Get Google OAuth credentials from environment
     client_id = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID', 'your-client-id')
     client_secret = os.environ.get('GOOGLE_OAUTH2_CLIENT_SECRET', 'your-client-secret')
-
+    
     if client_id == 'your-client-id' or client_secret == 'your-client-secret':
         print("WARNING: Google OAuth2 credentials are not properly set in environment variables!")
         print("Please update GOOGLE_OAUTH2_CLIENT_ID and GOOGLE_OAUTH2_CLIENT_SECRET in .env.prod")
-
+    
     # Create or update Google social app
     google_app, created = SocialApp.objects.get_or_create(
         provider='google',
@@ -59,7 +53,7 @@ def setup_google_oauth():
             'secret': client_secret,
         }
     )
-
+    
     if created:
         print(f"Created Google OAuth2 app")
     else:
@@ -67,18 +61,15 @@ def setup_google_oauth():
         google_app.client_id = client_id
         google_app.secret = client_secret
         google_app.save()
-
+    
     # Add the site to the social app
     google_app.sites.add(site)
     print(f"Added site {site.domain} to Google OAuth2 app")
-
+    
     print("\nGoogle OAuth2 setup completed!")
     print(f"Site: {site.domain}")
     print(f"Google App: {google_app.name}")
     print(f"Client ID: {google_app.client_id[:10]}...")
 
-
 if __name__ == '__main__':
     setup_google_oauth()
-
-# google_oauth_social_application_generator
